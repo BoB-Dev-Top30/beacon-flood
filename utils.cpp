@@ -11,6 +11,7 @@ void start_monitor_mode(char *interface) {
     system(command);
 }
 
+// 벡터로 파일 읽어오기
 std::vector<std::string> read_ssids_from_file(const std::string& filename) {
     std::vector<std::string> ssids;
     std::ifstream file(filename);

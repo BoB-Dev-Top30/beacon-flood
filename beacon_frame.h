@@ -1,22 +1,28 @@
 #include <cstdint>
 #include <cstdio>
+#include <vector>
+#include <pcap.h>
+#include <chrono>
 //함수 선언//
-bool Distinguish_Beacon(const struct pcap_pkthdr *header, const uint8_t *packet);
-
+bool Distinguish_Beacon(const uint8_t *packet);
+int find_ssid_position(const uint8_t *packet, int packet_len);
+uint8_t* find_wireless_static(const uint8_t *packet, int *ssid_length);
+uint8_t* modify_beacon_ssid(const uint8_t *packet, int packet_len, const char* new_ssid);
+void send_packet(pcap_t* handle, const uint8_t* packet, int length);
 
 
 ///////////////////////////// 라디오헤더 ////////////////////////
 // radio 헤더 구조체
-struct radiotap_header {
+typedef struct {
     uint8_t version;
     uint8_t pad;
     uint16_t len;
-};
+}radiotap_header;
 
 
 ///////////////////////////비콘 프레임////////////////////////////
 // beacon 프레임 구조체
-struct beacon_frame{
+typedef struct{
     uint8_t beacon_frame;
     uint8_t flags;
     uint16_t duration;
@@ -24,15 +30,17 @@ struct beacon_frame{
     uint8_t source_address[6];
     uint8_t bss_id[6];
     uint16_t fragment_sequence_number; // 한꺼번에(no need)
-};
+}beacon_frame;
 
 
 ///////////////////////////Wireless Management/////////////////////////
 // SSID 구조체
+
+#define SSID_MAX_LEN 32 //ssid의 최대길이
 typedef struct{
     uint8_t tag_number;
     uint8_t tag_length;
-    uint8_t *ssid;
+    uint8_t ssid[SSID_MAX_LEN];
 
 } Tag_SSID;
 
