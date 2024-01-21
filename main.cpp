@@ -5,11 +5,16 @@
 #include <pcap.h>
 #include <iostream>
 #include <chrono> // 시간측정위한것
-
-#include "beacon_frame.h"
+#include <cstring>
+#include <vector>
+#include "beacon_frame.h" // 비콘프레임 관련
 
 #include "utils.h" //파일 및 모니터모드 관련
 
+#include <thread> // 동시전송을 위한 쓰레드
+
+
+#define SSID_MAX_LEN 32 //ssid의 최대길이
 
 int main(int argc, char *argv[])
 {
@@ -51,25 +56,62 @@ int main(int argc, char *argv[])
       break;
     }
 
-    int Is_Beacon = Distinguish_Beacon(header, packet);
+    int Is_Beacon = Distinguish_Beacon(packet);
 
     if (Is_Beacon==1) 
     {
       printf("This IS Beacon\n");
-      /*
-      u_char *modified_packet = modify_beacon_ssid(packet, header->caplen, "New_SSID"); // 변경된 패킷 재전송
-      if (modified_packet != NULL) 
-        {
-          while(1)
-          {
-            auto end = std::chrono::high_resolution_clock::now();
-            pcap_sendpacket(handle, modified_packet, header->caplen);
-            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-            if(elapsed.count()>9){break;}
-          }
-          free(modified_packet);
+      std::vector<uint8_t*> modified_packets; // 변경된 패킷 저장을 위한 벡터
+      printf("%d\n", header->caplen); //길이 테스트출력
+      
+      for (const auto& ssid : ssids) 
+      {
+        uint8_t *modified_packet = modify_beacon_ssid(packet, header->caplen, ssid.c_str()); // 벡터에 저장된 ssid만큼 변경된 비콘 프레임생성
+        if (modified_packet == NULL) {
+          // 오류 처리: 메모리 할당 실패 또는 다른 이유
+          printf("modified_packet 메모리 할당 실패!\n");
+          continue; // 다음 SSID로 넘김
         }
-      */
+        modified_packets.push_back(modified_packet);
+
+        // 테스트용 출력 코드
+        int ssid_length;
+        
+        // <uint8_t>로변환
+        uint8_t *ssid_position = find_wireless_static(modified_packet, &ssid_length);
+        if (ssid_position == NULL || ssid_length > SSID_MAX_LEN) {
+          // 오류 처리: 유효하지 않은 SSID 위치 또는 길이
+          printf("테스트 ssid 메모리 할당 실패!\n");
+          free(modified_packet);
+          continue; // 다음 SSID로 넘어갑니다
+        }
+
+      char modified_ssid[SSID_MAX_LEN + 1];
+      memcpy(modified_ssid, ssid_position, ssid_length);
+      modified_ssid[ssid_length] = '\0';
+      printf("Modified SSID: %s\n", modified_ssid);
+      }
+
+      
+      // 각 변경된 패킷에 대해 별도의 스레드 생성하여 전송
+      std::vector<std::thread> threads;
+      for (const auto& modified_packet : modified_packets) 
+      {
+        threads.push_back(std::thread(send_packet, handle, modified_packet, header->caplen));
+      }
+
+      // 모든 스레드가 완료될 때까지 기다림
+      for (auto& thread : threads) 
+      {
+        thread.join();
+      }
+      for (auto& modified_packet : modified_packets)
+      {
+        free(modified_packet);  // 잡은 패킷으로 한번 쭉 전송하고 메모리해제
+      }
+
     }
   }
+    
 }
+
