@@ -1,3 +1,10 @@
+#include <cstdint>
+#include <cstdio>
+//함수 선언//
+bool Distinguish_Beacon(const struct pcap_pkthdr *header, const uint8_t *packet);
+
+
+
 ///////////////////////////// 라디오헤더 ////////////////////////
 // radio 헤더 구조체
 struct radiotap_header {
@@ -25,7 +32,7 @@ struct beacon_frame{
 typedef struct{
     uint8_t tag_number;
     uint8_t tag_length;
-    uint8_t ssid[];
+    uint8_t *ssid;
 
 } Tag_SSID;
 
@@ -33,7 +40,7 @@ typedef struct{
 typedef struct{
     uint8_t tag_number;
     uint8_t tag_length;
-    uint8_t rates[];
+    uint8_t *rates;
     // supported rates가 가변길이여서 뒤는 length 보고 결정된다. 여기랑 extended에서 최댓값 구해야함 
 
 } Tag_Supported_Rates;
@@ -70,7 +77,7 @@ typedef struct{
 typedef struct{
     uint8_t tag_number;
     uint8_t tag_length;
-    uint8_t rates[];
+    uint8_t * rates;
     // supported rates가 가변길이여서 뒤는 length 보고 결정된다. 여기랑 extended에서 최댓값 구해야함 
 
 } Tag_Extended_Supported_Rates;
@@ -82,7 +89,7 @@ typedef struct{
     uint8_t DTIM_count;
     uint8_t DTIM_period;
     uint8_t bitmap;
-    uint8_t virtual_bitmap[]; // 가변
+    uint8_t * virtual_bitmap; // 가변
 } Tag_Traffic_Indication_Map;
 
 //ERP Information
