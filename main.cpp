@@ -8,15 +8,18 @@
 #include <fstream>
 #include <string>
 #include <vector>
-/*
+
+#include <chrono> // 시간측정위한것
+
+#include "beacon_frame.h"
+
 // 모니터 모드 자동 실행
 void start_monitor_mode(char *interface) {
     char command[100];
-
     sprintf(command, "sudo gmon %s", interface);
     system(command);
 }
-
+/*
 // SSID 위치를 찾는 함수 (가정: SSID는 항상 존재하고 특정 위치에 있다고 가정)
 int find_ssid_position(const u_char *packet, int packet_len) {
     // 이 함수는 비콘 프레임 내에서 SSID 정보 요소의 위치를 찾아 반환합니다.
@@ -79,9 +82,7 @@ int main(int argc, char *argv[])
       std::cout << ssid << std::endl;
   }
 
-  /*
-
-  
+  // gmon 설치 필요!
   start_monitor_mode(argv[1]);
 
   while (1) 
@@ -90,7 +91,7 @@ int main(int argc, char *argv[])
     if (handle == NULL) 
     {
       fprintf(stderr, "Couldn' Capture': %s\n", errbuf);
-        return 2;
+        return 0;
     }
     const u_char *packet;
     struct pcap_pkthdr *header;
@@ -104,17 +105,26 @@ int main(int argc, char *argv[])
       pcap_close(handle);
       break;
     }
-    int Is_Beacon = process_packet(header, packet);
+
+    int Is_Beacon = Distinguish_Beacon(header, packet);
+
     if (Is_Beacon==1) 
     {
+      printf("This IS Beacon\n");
+      /*
       u_char *modified_packet = modify_beacon_ssid(packet, header->caplen, "New_SSID"); // 변경된 패킷 재전송
         if (modified_packet != NULL) 
         {
-          pcap_sendpacket(handle, modified_packet, header->caplen);
+          while(1)
+          {
+            auto end = std::chrono::high_resolution_clock::now();
+            pcap_sendpacket(handle, modified_packet, header->caplen);
+            auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+            if(elapsed.count()>9){break;}
+          }
           free(modified_packet);
         }
+      */
     }
   }
-  */
-
 }

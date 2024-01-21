@@ -1,7 +1,7 @@
 
 CXX = g++
 
-LDLIBS = 
+LDLIBS = -lpcap 
 
 
 all: beacon-flood
