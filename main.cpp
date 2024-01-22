@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
       
       for (const auto& ssid : ssids) 
       {
-        change_channel("wlan0", channel++); // 채널 변경
+        // change_channel("wlan0", channel++); // 채널 변경
         if (channel > 11) channel = 1;
         
         uint8_t *modified_packet = modify_beacon_ssid(packet, header->caplen, ssid.c_str()); // 벡터에 저장된 ssid만큼 변경된 비콘 프레임생성
