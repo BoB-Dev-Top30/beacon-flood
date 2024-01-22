@@ -13,6 +13,8 @@
 
 #include <thread> // 동시전송을 위한 쓰레드
 
+#include <cstdlib>  // system 함수 사용을 위해 필요
+
 
 #define SSID_MAX_LEN 32 //ssid의 최대길이
 
@@ -62,7 +64,7 @@ int main(int argc, char *argv[])
     }
 
     int Is_Beacon = Distinguish_Beacon(packet);
-    
+    int channel = 1; // 시작 채널
     std::vector<uint8_t*> modified_packets; // 변경된 패킷 저장을 위한 벡터
     if (Is_Beacon==1) 
     {
@@ -71,6 +73,9 @@ int main(int argc, char *argv[])
       
       for (const auto& ssid : ssids) 
       {
+        change_channel("wlan0", channel++); // 채널 변경
+        if (channel > 11) channel = 1;
+        
         uint8_t *modified_packet = modify_beacon_ssid(packet, header->caplen, ssid.c_str()); // 벡터에 저장된 ssid만큼 변경된 비콘 프레임생성
         if (modified_packet == NULL) {
           // 오류 처리: 메모리 할당 실패 또는 다른 이유
