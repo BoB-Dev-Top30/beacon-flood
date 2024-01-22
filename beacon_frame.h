@@ -3,6 +3,25 @@
 #include <vector>
 #include <pcap.h>
 #include <chrono>
+
+
+
+#include <mutex>
+#include <condition_variable>
+
+extern std::mutex mtx;
+extern std::condition_variable cv;
+extern bool ready;
+
+
+
+
+
+
+
+
+
+
 //함수 선언//
 bool Distinguish_Beacon(const uint8_t *packet);
 int find_ssid_position(const uint8_t *packet, int packet_len);

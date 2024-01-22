@@ -16,6 +16,11 @@
 
 #define SSID_MAX_LEN 32 //ssid의 최대길이
 
+std::mutex mtx;
+std::condition_variable cv;
+bool ready = false;
+
+
 int main(int argc, char *argv[])
 {
   char errbuf[PCAP_ERRBUF_SIZE];
@@ -57,11 +62,11 @@ int main(int argc, char *argv[])
     }
 
     int Is_Beacon = Distinguish_Beacon(packet);
-
+    
+    std::vector<uint8_t*> modified_packets; // 변경된 패킷 저장을 위한 벡터
     if (Is_Beacon==1) 
     {
       printf("This IS Beacon\n");
-      std::vector<uint8_t*> modified_packets; // 변경된 패킷 저장을 위한 벡터
       printf("%d\n", header->caplen); //길이 테스트출력
       
       for (const auto& ssid : ssids) 
@@ -95,22 +100,31 @@ int main(int argc, char *argv[])
       
       // 각 변경된 패킷에 대해 별도의 스레드 생성하여 전송
       std::vector<std::thread> threads;
-      for (const auto& modified_packet : modified_packets) 
+      for (auto it = modified_packets.begin(); it != modified_packets.end();)
       {
-        threads.push_back(std::thread(send_packet, handle, modified_packet, header->caplen));
-      }
+        for (int i = 0; i < 10 && it != modified_packets.end(); ++i, ++it) // 10개만 일단은
+        {
+          threads.push_back(std::thread(send_packet, handle, *it, header->caplen));
+        }
 
-      // 모든 스레드가 완료될 때까지 기다림
-      for (auto& thread : threads) 
-      {
-        thread.join();
+        {
+          std::unique_lock<std::mutex> lock(mtx);
+          ready = true;
+          cv.notify_all(); // 모든 스레드에 시작 신호 전달
+        }
+
+    // 모든 스레드가 완료될 때까지 기다림
+        for (auto& thread : threads) 
+        {
+          thread.join();
+        }
+        threads.clear();
       }
-      for (auto& modified_packet : modified_packets)
+    }
+     for (auto& modified_packet : modified_packets)
       {
         free(modified_packet);  // 잡은 패킷으로 한번 쭉 전송하고 메모리해제
       }
-
-    }
   }
     
 }

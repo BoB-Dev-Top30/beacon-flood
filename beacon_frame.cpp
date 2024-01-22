@@ -7,6 +7,7 @@
 #include <vector>
 #include <pcap.h>
 #include <chrono>
+#include <thread>
 // 비콘프레임 추출
 
 bool Distinguish_Beacon(const uint8_t *packet) {
@@ -84,11 +85,17 @@ void send_packet(pcap_t* handle, const uint8_t* packet, int length) {
 
     while (true) {
         auto end = std::chrono::high_resolution_clock::now(); // 현재 시간을 end 변수에 저장
-        pcap_sendpacket(handle, packet, length);
-
-        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
-        if (elapsed.count() > 5) {
-            break; // 5초 이상 지나면 반복문 탈출
+        {
+            std::unique_lock<std::mutex> lock(mtx);
+            cv.wait(lock, []{ return ready; });
         }
+        pcap_sendpacket(handle, packet, length);
+        std::this_thread::sleep_for(std::chrono::milliseconds(80)); // 100ms 간격으로 패킷 전송
+        /*
+        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+        if (elapsed.count() > 30) {
+            break; // 30초 이상 지나면 반복문 탈출
+        }
+        */
     }
 }
