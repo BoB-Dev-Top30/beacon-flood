@@ -90,7 +90,7 @@ void send_packet(pcap_t* handle, const uint8_t* packet, int length) {
             cv.wait(lock, []{ return ready; });
         }
         pcap_sendpacket(handle, packet, length);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1)); // 1초에 천번
+        std::this_thread::sleep_for(std::chrono::milliseconds(100)); // 1초에 천번
         /*
         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(end - start);
         if (elapsed.count() > 30) {
