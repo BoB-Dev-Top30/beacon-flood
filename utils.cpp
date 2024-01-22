@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <cstdlib>
 
 // 모니터 모드 자동 실행
 void start_monitor_mode(char *interface) {
@@ -27,4 +28,10 @@ std::vector<std::string> read_ssids_from_file(const std::string& filename) {
     }
 
     return ssids;
+}
+
+void change_channel(const char* interface, int channel) {
+    char command[100];
+    sprintf(command, "iwconfig %s channel %d", interface, channel);
+    system(command);
 }
